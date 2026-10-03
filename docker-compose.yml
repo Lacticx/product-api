@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  nammongodb:
+    image: mongo:latest
+    container_name: nammongodb
+    ports:
+      - "27017:27017"
+    healthcheck:
+      # Kiểm tra ping đến db để xác nhận MongoDB đã sẵn sàng
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product-api:
+    build: .
+    container_name: product-api
+    ports:
+      - "3000:3000"
+    environment:
+      # Sửa localhost thành tên dịch vụ/container của database trong mạng Docker
+      - MONGO_URI=mongodb://nammongodb:27017/product_db
+      - PORT=3000
+    depends_on:
+      nammongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
