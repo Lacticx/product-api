@@ -14,7 +14,7 @@ services:
 
   product-api:
     # Thay <DOCKER_USERNAME> bằng tài khoản Docker Hub của bạn. Ví dụ: lacticx/product-api:latest
-    image: Lacticx/product-api:latest
+    image: lacticx/product-api:latest
     container_name: product-api-prod
     ports:
       - "3000:3000"
