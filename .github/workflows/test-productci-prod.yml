@@ -19,4 +19,4 @@ jobs:
           docker ps
           
       - name: Xác nhận API hoạt động
-        run: curl -f http://localhost:3000/products || exit 1
+        run: curl -f http://localhost:3000/health || exit 1
