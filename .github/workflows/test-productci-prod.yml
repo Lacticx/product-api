@@ -1,0 +1,22 @@
+name: Production CI Pipeline
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Chạy hệ thống bằng Docker Compose
+        run: docker-compose up -d
+        
+      - name: Chờ Healthcheck kiểm tra hệ thống
+        run: |
+          echo "Đang đợi các container khởi động và kiểm tra sức khỏe..."
+          sleep 20
+          docker ps
+          
+      - name: Xác nhận API hoạt động
+        run: curl -f http://localhost:3000/products || exit 1
