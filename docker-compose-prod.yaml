@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  nammongodb:
+    image: mongo:latest
+    container_name: nammongodb_prod
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product-api:
+    # Thay <DOCKER_USERNAME> bằng tài khoản Docker Hub của bạn. Ví dụ: lacticx/product-api:latest
+    image: Lacticx/product-api:latest
+    container_name: product-api-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://nammongodb:27017/product_db
+      - PORT=3000
+    depends_on:
+      nammongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
