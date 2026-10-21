@@ -1,0 +1,36 @@
+name: Simple CI Test for Product API
+
+# 1. Sự kiện kích hoạt: Chạy tự động khi push hoặc tạo Pull Request vào nhánh main
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# 2. Danh sách các công việc (Jobs) sẽ thực thi
+jobs:
+  build-and-check:
+    # Sử dụng máy ảo Ubuntu mới nhất của GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 2.1: Tải mã nguồn từ repository về máy ảo Ubuntu
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Bước 2.2: Cài đặt môi trường Node.js phiên bản 20
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Bước 2.3: Cài đặt các thư viện khai báo trong package.json
+      - name: Install dependencies
+        run: npm install
+
+      # Bước 2.4: Kiểm tra cú pháp (Syntax check) của mã nguồn mà không cần chạy server
+      - name: Check syntax of server.js and Product model
+        run: |
+          node --check server.js
+          node --check models/Product.js
+          echo "Kiểm tra cú pháp CI cơ bản thành công!"
