@@ -60,5 +60,10 @@ describe('Kiểm thử thực tế CRUD Product API với MongoDB', () => {
     const checkRes = await request(app).get('/api/products/P100');
     expect(checkRes.statusCode).toBe(404);
   });
+  test('6. [READ ALL] GET /api/products - Lấy danh sách sản phẩm trả về mảng', async () => {
+    const res = await request(app).get('/api/products');
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 
 });
