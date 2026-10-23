@@ -1,16 +1,16 @@
-name: Production CI CRUD Test with MongoDB
+name: Production CI-CD Pipeline with Docker Hub
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
+  # ==========================================
+  # GIAI ĐOẠN 1: CI (Test CRUD + Healthcheck)
+  # ==========================================
   test-crud-with-mongodb:
     runs-on: ubuntu-latest
 
-    # Khởi tạo container MongoDB đi kèm ngay trên máy ảo GitHub Actions
     services:
       mongodb:
         image: mongo:latest
@@ -23,24 +23,50 @@ jobs:
           --health-retries 5
 
     steps:
-      # Bước 1: Lấy mã nguồn về máy ảo
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # Bước 2: Cài đặt Node.js 20
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # Bước 3: Cài đặt toàn bộ thư viện (bao gồm cả jest và supertest)
       - name: Install dependencies
         run: npm install
 
-      # Bước 4: Thực thi bộ kiểm thử CRUD thực tế kết nối vào MongoDB trên máy ảo
-      - name: Run Automated CRUD Tests against MongoDB Service
+      # Kiểm tra cả endpoint /health và toàn bộ CRUD thông qua Jest
+      - name: Run Automated Healthcheck and CRUD Tests
         env:
           NODE_ENV: test
           PORT: 3000
           MONGO_URI: mongodb://127.0.0.1:27017/productdb_test
         run: npm test
+
+  # ==========================================
+  # GIAI ĐOẠN 2: CD (Build & Push lên Docker Hub)
+  # ==========================================
+  cd-push-dockerhub:
+    # Bắt buộc bước CI (bao gồm Healthcheck & CRUD) phải thành công thì mới chạy CD
+    needs: test-crud-with-mongodb
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Bước 1: Đăng nhập vào Docker Hub bằng GitHub Secrets
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Bước 2: Đóng gói (Build) và Đẩy (Push) Image lên Docker Hub
+      - name: Build and push Product API Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-api:v1
