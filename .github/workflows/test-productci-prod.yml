@@ -6,7 +6,7 @@ on:
 
 jobs:
   # ==========================================
-  # GIAI ĐOẠN 1: CI (Test CRUD + Healthcheck)
+  # GIAI ĐOẠN 1: CI (Test CRUD + Healthcheck trên Cloud)
   # ==========================================
   test-crud-with-mongodb:
     runs-on: ubuntu-latest
@@ -34,7 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Kiểm tra cả endpoint /health và toàn bộ CRUD thông qua Jest
       - name: Run Automated Healthcheck and CRUD Tests
         env:
           NODE_ENV: test
@@ -43,10 +42,9 @@ jobs:
         run: npm test
 
   # ==========================================
-  # GIAI ĐOẠN 2: CD (Build & Push lên Docker Hub)
+  # GIAI ĐOẠN 2: CD Bước 1 (Build & Push lên Docker Hub)
   # ==========================================
   cd-push-dockerhub:
-    # Bắt buộc bước CI (bao gồm Healthcheck & CRUD) phải thành công thì mới chạy CD
     needs: test-crud-with-mongodb
     runs-on: ubuntu-latest
 
@@ -54,14 +52,12 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # Bước 1: Đăng nhập vào Docker Hub bằng GitHub Secrets
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Bước 2: Đóng gói (Build) và Đẩy (Push) Image lên Docker Hub
       - name: Build and push Product API Docker image
         uses: docker/build-push-action@v5
         with:
@@ -70,3 +66,21 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:v1
+
+  # ==========================================
+  # GIAI ĐOẠN 3: CD Bước 2 (Tự động kéo từ Docker Hub về Local Docker Engine)
+  # ==========================================
+  deploy-to-local-docker:
+    needs: cd-push-dockerhub
+    # Chạy trực tiếp trên máy tính cá nhân của bạn thông qua Self-hosted Runner
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository code to get docker-compose-prod.yaml
+        uses: actions/checkout@v4
+
+      - name: Pull latest image from Docker Hub and restart containers
+        run: |
+          docker compose -f docker-compose-prod.yaml pull
+          docker compose -f docker-compose-prod.yaml up -d
+          docker image prune -f
