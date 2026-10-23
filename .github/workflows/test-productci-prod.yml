@@ -1,0 +1,46 @@
+name: Production CI CRUD Test with MongoDB
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-crud-with-mongodb:
+    runs-on: ubuntu-latest
+
+    # Khởi tạo container MongoDB đi kèm ngay trên máy ảo GitHub Actions
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Bước 1: Lấy mã nguồn về máy ảo
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt Node.js 20
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Bước 3: Cài đặt toàn bộ thư viện (bao gồm cả jest và supertest)
+      - name: Install dependencies
+        run: npm install
+
+      # Bước 4: Thực thi bộ kiểm thử CRUD thực tế kết nối vào MongoDB trên máy ảo
+      - name: Run Automated CRUD Tests against MongoDB Service
+        env:
+          NODE_ENV: test
+          PORT: 3000
+          MONGO_URI: mongodb://127.0.0.1:27017/productdb_test
+        run: npm test

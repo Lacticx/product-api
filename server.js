@@ -1,26 +1,19 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const mongoose = require('mongoose');
 const Product = require('./models/Product');
 
 const app = express();
-app.use(express.json()); // Cho phép đọc dữ liệu JSON từ body của request
+app.use(express.json());
 
-// 1. Kết nối tới MongoDB Container (nammongodb)
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Đã kết nối thành công tới MongoDB (nammongodb)!'))
-  .catch((err) => console.error('Lỗi kết nối MongoDB:', err.message));
-
-  // [HEALTHCHECK] Kiểm tra trạng thái hoạt động của API và kết nối MongoDB
+// [HEALTHCHECK] Kiểm tra trạng thái hoạt động của API và kết nối MongoDB
 app.get('/health', (req, res) => {
-  // readyState === 1 nghĩa là Mongoose đang kết nối tốt với MongoDB
   if (mongoose.connection.readyState === 1) {
     res.status(200).json({ status: 'UP', db: 'Connected' });
   } else {
     res.status(500).json({ status: 'DOWN', db: 'Disconnected' });
   }
 });
-// 2. Các API CRUD cho Product
 
 // [CREATE] Thêm mới sản phẩm (POST /api/products)
 app.post('/api/products', async (req, res) => {
@@ -81,8 +74,16 @@ app.delete('/api/products/:pid', async (req, res) => {
   }
 });
 
-// 3. Khởi chạy Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server đang chạy tại http://localhost:${PORT}`);
-});
+// QUAN TRỌNG: Chỉ tự động kết nối DB và mở cổng khi KHÔNG phải môi trường chạy Jest test
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Đã kết nối thành công tới MongoDB (nammongodb)!'))
+    .catch((err) => console.error('Lỗi kết nối MongoDB:', err.message));
+
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server đang chạy tại http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
