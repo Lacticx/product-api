@@ -14,7 +14,7 @@ services:
       retries: 5
       start_period: 10s
 
-  # Dịch vụ 2: Ứng dụng Product API tải trực tiếp từ Docker Hub
+  # Dịch vụ 2: Ứng dụng Product API tải từ Docker Hub
   product-api:
     image: lacticx/product-api:latest
     container_name: namproductapi
@@ -33,6 +33,20 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # Dịch vụ 3: Watchtower - Tự động kéo Image mới từ Docker Hub và khởi động lại container
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: namwatchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Khắc phục lỗi tương thích phiên bản Docker API trên Docker Desktop mới nhất
+      - DOCKER_API_VERSION=1.44
+    # Quét Docker Hub mỗi 15 giây (--interval 15), xóa image cũ (--cleanup) 
+    # và chỉ theo dõi cập nhật riêng container namproductapi
+    command: --interval 15 --cleanup namproductapi
+    restart: unless-stopped
 
 volumes:
   mongo_data:

@@ -42,7 +42,7 @@ jobs:
         run: npm test
 
   # ==========================================
-  # GIAI ĐOẠN 2: CD Bước 1 (Build & Push lên Docker Hub)
+  # GIAI ĐOẠN 2: CD (Build & Push lên Docker Hub)
   # ==========================================
   cd-push-dockerhub:
     needs: test-crud-with-mongodb
@@ -66,21 +66,3 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:v1
-
-  # ==========================================
-  # GIAI ĐOẠN 3: CD Bước 2 (Tự động kéo từ Docker Hub về Local Docker Engine)
-  # ==========================================
-  deploy-to-local-docker:
-    needs: cd-push-dockerhub
-    # Chạy trực tiếp trên máy tính cá nhân của bạn thông qua Self-hosted Runner
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout repository code to get docker-compose-prod.yaml
-        uses: actions/checkout@v4
-
-      - name: Pull latest image from Docker Hub and restart containers
-        run: |
-          docker compose -f docker-compose-prod.yaml pull
-          docker compose -f docker-compose-prod.yaml up -d
-          docker image prune -f
